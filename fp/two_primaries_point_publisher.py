@@ -27,12 +27,11 @@ from visualization_msgs.msg import MarkerArray
 from math import pi, sin, cos, acos, atan2, sqrt, fmod, exp
 
 # Grab the utilities
-from hw5code.GeneratorNode      import GeneratorNode
-from hw5code.TrajectoryUtils    import *
+from TrajectoryUtils    import *
 
 # Grab the general fkin from HW5 P5.
-from hw5code.KinematicChain     import KinematicChain
-from demos.TransformHelpers     import *
+from KinematicChain     import KinematicChain
+from TransformHelpers     import *
 
 #
 #   Atlas Joint Names
@@ -98,10 +97,6 @@ class DemoNode(Node):
                                                                     'l_arm_wry', 'l_arm_wrx', 'l_arm_wry2'])
 
         
-        # self.chain_lleg = KinematicChain(self, 'l_lleg', 'pelvis', ['l_leg_kny', 'l_leg_hpy', 'l_leg_hpx', 'l_leg_hpz'])
-        # self.chain_rleg = KinematicChain(self, 'pelvis', 'r_lleg', ['r_leg_hpx', 'r_leg_hpy', 'r_leg_hpz', 'r_leg_kny'])
-
-
         # Set up the timing so (t=0) will occur in the first update
         # cycle (dt) from now.
         self.dt    = 1.0 / float(rate)
@@ -132,8 +127,6 @@ class DemoNode(Node):
         # Starts the marker points
         # Create the point.
         self.p_right = Point()
-        #print(self.pd_r[0])
-        #self.setvalue()
 
         # Create the point message.
         self.point_right = PointStamped()
@@ -169,7 +162,6 @@ class DemoNode(Node):
 
         # Create the point.
         self.p_left = Point()
-        #print(self.pd_r[0])
         self.setvalue()
 
         # Create the point message.
@@ -255,22 +247,17 @@ class DemoNode(Node):
         qdot = np.zeros((len(jointnames), 1))
 
 
-        # Right Arm Cutting Trajectory 
-        # T_from_URDF_origin(pzero()) @
-   
+        # Right Arm Cutting Trajectory    
         pd_r =  pxyz(0.1 * np.sin(3*self.t) + 0.6, -0.33, 0.268) # subtract from pelvis
         vd_r =  pxyz(0.3 * np.cos(3*self.t), 0, 0)
         Rd_r = Rotz(pi/2)
         wd_r = np.array([0,0,0]).reshape(3,1)
 
-        #print(pd_r)
-        
-
 
         qlast_r = self.q[:10] 
         pdlast_r = self.pd_r
         Rdlast_r = self.Rd_r
-        (ptip_r, Rtip_r, Jv_r, Jw_r) = self.chain_rarm.fkin(qlast_r)  # Right Arm 
+        (ptip_r, Rtip_r, Jv_r, Jw_r) = self.chain_rarm.fkin(qlast_r)  # Right Arm forward kinematics
 
         eP_r = ep(pdlast_r, ptip_r) 
         er_r = eR(Rdlast_r, Rtip_r) 
@@ -284,15 +271,7 @@ class DemoNode(Node):
         sp    =   sin(0.2 * self.t) 
         spdot = 0.2 * cos(0.2 * self.t)
 
-        ### Simple Trajectory 
-        # Comment this block out for running the singularity trajectory of the left arm
-        # pf, Rf, _, _ = self.chain_larm.fkin(np.array([0, 0, 0, 0., -30., 0., 30., 0., 0., 0.]).reshape((-1,1))) 
-        # pd_l = 0.5 * (self.p0_larm + pf)  + 0.5 * (pf - self.p0_larm) * sp 
-        # vd_l = 0.5 * (pf - self.p0_larm) * spdot
-
-        # # ''' Singularity Case
-        # Comment this block out for running the simple trajectory of the left arm
-        pf = pxyz(-0.3777-0.5, 0.6200, 1.29068) - ppelvis
+        pf = pxyz(-0.3777-0.5, 0.6200, 1.29068) - ppelvis # final position vector of left arm
         pd_l = 0.5 * (self.p0_larm + pf)  + 0.5 * (pf - self.p0_larm) * sp
         vd_l = 0.5 * (pf - self.p0_larm) * spdot
         # # '''
@@ -304,7 +283,7 @@ class DemoNode(Node):
         qlast_l = np.vstack(( self.q[0:3,:],self.q[10:17,:]))
         pdlast_l = self.pd_l
         Rdlast_l = self.Rd_l
-        (ptip_l, Rtip_l, Jv_l, Jw_l) = self.chain_larm.fkin(qlast_l) # Left Arm
+        (ptip_l, Rtip_l, Jv_l, Jw_l) = self.chain_larm.fkin(qlast_l) # Left Arm forward kinematics
         eP_l = ep(pdlast_l, ptip_l) 
         er_l = eR(Rdlast_l, Rtip_l) 
         error_s = np.vstack((eP_l, er_l)) 
@@ -324,34 +303,22 @@ class DemoNode(Node):
         gamma = 0.5
         J_W_inv = J_W_transpose @ np.linalg.pinv(J_W @ J_W_transpose + gamma**2 * np.eye(12))
 
-        #J_W_inv = J_W_transpose @ np.linalg.inv(J_W @ J_W_transpose)
-        Jinv = np.linalg.pinv(J)
-
         error = np.vstack((error_p, error_s))
         xdot = np.vstack((xdot_p, xdot_s))
 
-        #qdot_p = Jinv @ (xdot + self.lam * error)
-
-        #qdot_p = Jinv @ (xdot + self.lam * error)  #+ (np.eye(17) - Jinv @ J) @ qdot_back_full
         qdot_p = (W_inv @ J_W_inv) @ (xdot + self.lam * error)
 
-
-
-        qlast = np.vstack((qlast_r, qlast_l[3:,:]))   #np.vstack((qlast_r[3:,:], qlast_l))
-        # print(qlast.shape)
+        qlast = np.vstack((qlast_r, qlast_l[3:,:]))   
 
         #Sets the new desired position for the markers
         self.setvalue()
 
 
-        self.q = qlast + qdot_p * self.dt  # 17x1
+        self.q = qlast + qdot_p * self.dt  
         self.pd_r = pd_r
         self.Rd_r = Rd_r
         self.pd_l = pd_l
         self.Rd_l = Rd_l
-
-        # self.q_larm = qlast_l + qdot_s * self.dt
-
 
         ### Publish Joints  
 
@@ -371,9 +338,6 @@ class DemoNode(Node):
         self.marker_left.header.stamp = self.now().to_msg()
         self.pub_mark.publish(self.mark)
 
-
-
-
         cmdmsg = JointState()
         cmdmsg.header.stamp = self.now().to_msg()       # Current time for ROS
         cmdmsg.name         = jointnames                # List of names
@@ -392,7 +356,6 @@ def main(args=None):
     # Initialize ROS and the demo node (100Hz).
     rclpy.init(args=args)
     node = DemoNode('cut', 100)
-    #node = GeneratorNode('generator', 100, Trajectory)
 
     # Spin, until interrupted.
     rclpy.spin(node)
