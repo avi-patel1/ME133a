@@ -1,10 +1,9 @@
-#Requires demos and hw5code folders
+# Avi Patel and Kemal Pulungan 
 # This code makes Atlas run with both the right and left hands acting as the primary task.
-#Avi Patel and Kemal Pulungan 
 
 '''
 
-   Node:        /generator
+   Node:        /cut
    Publish:     /joint_states           sensor_msgs/JointState
 
 '''

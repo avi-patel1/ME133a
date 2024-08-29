@@ -1,11 +1,10 @@
 
-#Requires demos and hw5code folders
+# Avi Patel and Kemal Pulungan 
 # This code makes Atlas run with the right hand acting as the primary task, and the left hand as the secondary.
-#Avi Patel and Kemal Pulungan 
 
 '''
 
-   Node:        /generator
+   Node:        /cur
    Publish:     /joint_states           sensor_msgs/JointState
 
 '''
@@ -28,12 +27,11 @@ from visualization_msgs.msg import MarkerArray
 from math import pi, sin, cos, acos, atan2, sqrt, fmod, exp
 
 # Grab the utilities
-from hw5code.GeneratorNode      import GeneratorNode
-from hw5code.TrajectoryUtils    import *
+from TrajectoryUtils    import *
 
 # Grab the general fkin from HW5 P5.
-from hw5code.KinematicChain     import KinematicChain
-from demos.TransformHelpers     import *
+from KinematicChain     import KinematicChain
+from TransformHelpers     import *
 
 
 #
@@ -114,8 +112,8 @@ class DemoNode(Node):
         self.q = np.vstack( (self.q0_back, np.vstack((self.q_rarm, self.q_larm))))
 
 
-        (self.p0_rarm, self.R0_rarm, _, _) = self.chain_rarm.fkin(self.q[0:10])  #np.array( [4., 2., 4.]).reshape((-1,1) )
-        (self.p0_larm, self.R0_larm, _, _) = self.chain_larm.fkin(np.vstack((self.q[0:3], self.q[10:])))  #np.array( [4., 2., 4.]).reshape((-1,1) )
+        (self.p0_rarm, self.R0_rarm, _, _) = self.chain_rarm.fkin(self.q[0:10]) 
+        (self.p0_larm, self.R0_larm, _, _) = self.chain_larm.fkin(np.vstack((self.q[0:3], self.q[10:]))) 
         print(self.p0_larm)
 
 
@@ -235,7 +233,7 @@ class DemoNode(Node):
         # To avoid any time jitter enforce a constant time step and
         # integrate to get the current time.
         self.t += self.dt
-        #T = 10.0    
+
         # Compute position/orientation of the pelvis (w.r.t. world).
         ppelvis = pxyz(0.0, 0.0, 0.862)
         Rpelvis = Reye()
@@ -256,8 +254,7 @@ class DemoNode(Node):
 
 
         # Right Arm Cutting Trajectory 
-        # T_from_URDF_origin(pzero()) @
-        pd_r =  pxyz(0.1 * np.sin(3*self.t) + 0.6, -0.33, 0.268) # subtract from pelvis
+        pd_r =  pxyz(0.1 * np.sin(3*self.t) + 0.6, -0.33, 0.268) # subtract from pelvis coordinates
         vd_r =  pxyz(0.3 * np.cos(3*self.t), 0, 0)
         Rd_r = Rotz(pi/2)
         wd_r = np.array([0,0,0]).reshape(3,1)
@@ -309,7 +306,6 @@ class DemoNode(Node):
         eP_l = ep(pdlast_l, ptip_l) 
         er_l = eR(Rdlast_l, Rtip_l) 
         error_s = np.vstack((eP_l, er_l)) 
-        xdot_s = np.vstack((vd_l, wd_l)) 
         
         J_s = np.vstack((Jv_l, Jw_l)) 
         J_s = np.hstack((J_s[:,:3], np.zeros((6,7)), J_s[:,3:]))
@@ -323,13 +319,6 @@ class DemoNode(Node):
         gamma = 0.5
         J_sW_inv = J_sW_transpose @ np.linalg.pinv(J_sW @ J_sW_transpose + gamma**2 * np.eye(6))
 
-        #J_sW_inv = (W_inv @ J_sW_transpose) @ np.linalg.inv(J_sW @ J_sW_transpose)
-        #Jinv_s = np.linalg.pinv(J_s)
-
-        #print(x_dot.shape, error.shape)
-        #qdot_rarm = J_W_inv @ (x_dot + self.lam * error)
-        #qdot_rarm = Jinv @ (x_dot + self.lam * error)
-
         W_inv = np.diag([.1,.1,.1,1,1,1,1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) # Scaling Joint velocities
         J_pW = J_p @ W_inv
         J_pW_transpose = np.transpose(J_pW)
@@ -339,8 +328,6 @@ class DemoNode(Node):
         qdot_s = lam_s * (W_s_inv @ J_sW_inv) @ error_s
 
         qdot_p = (W_inv @ J_pW_inv ) @ (xdot_p + self.lam * error_p) + (np.identity(17) - J_pW_inv @ J_pW) @ qdot_s 
-        print("qdot_p", Jinv_p @ (xdot_p + self.lam * error_p) )
-        print("qdot_s", (np.identity(17) - Jinv_p @ J_p) @ qdot_s )
         qlast =  np.vstack((qlast_r, qlast_l[3:]))
 
         #Sets the new desired position for the markers
@@ -351,8 +338,6 @@ class DemoNode(Node):
         self.Rd_r = Rd_r
         self.pd_l = pd_l
         self.Rd_l = Rd_l
-
-        # self.q_larm = qlast_l + qdot_s * self.dt
 
         ### Publish Joints  
 
@@ -389,7 +374,6 @@ def main(args=None):
     # Initialize ROS and the demo node (100Hz).
     rclpy.init(args=args)
     node = DemoNode('cut', 100)
-    #node = GeneratorNode('generator', 100, Trajectory)
 
     # Spin, until interrupted.
     rclpy.spin(node)
