@@ -61,22 +61,6 @@ def generate_launch_description():
         arguments  = ['-d', rvizcfg],
         on_exit    = Shutdown())
 
-    # Configure a node for the GUI.
-    node_gui = Node(
-        name       = 'gui', 
-        package    = 'joint_state_publisher_gui',
-        executable = 'joint_state_publisher_gui',
-        output     = 'screen',
-        on_exit    = Shutdown())
-
-    # Configure a node for the cook.
-    node_cook = Node(
-        name       = 'cook',
-        package    = 'final-proj',
-        executable = 'cook',
-        output     = 'screen')
-
-
     ######################################################################
     # RETURN THE ELEMENTS IN ONE LIST
 
@@ -84,6 +68,4 @@ def generate_launch_description():
         # Start the robot_state_publisher, RVIZ, the GUI, and the demo.
         node_robot_state_publisher,
         node_rviz,
-        #node_gui,
-        #node_cook,
     ])
