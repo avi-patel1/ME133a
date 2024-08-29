@@ -273,7 +273,6 @@ class DemoNode(Node):
         pf = pxyz(-0.3777-0.5, 0.6200, 1.29068) - ppelvis # final position vector of left arm
         pd_l = 0.5 * (self.p0_larm + pf)  + 0.5 * (pf - self.p0_larm) * sp
         vd_l = 0.5 * (pf - self.p0_larm) * spdot
-        # # '''
        
         Rd_l = self.R0_larm 
         wd_l = np.array([0,0,0]).reshape(3,1)

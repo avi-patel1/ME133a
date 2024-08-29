@@ -25,13 +25,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'cut = fp.cut_kinem:main',
-            'cutV2 = fp.left_secondary:main',
-            'test = fp.test:main',
-            'cutTwoPrimaries = fp.two_primaries_stack:main',
-            'cutLeft = fp.cut_kinem_left:main',
-            'cutPublisher = fp.two_primaries_point_publisher:main',
-            'secondaryPublisher = fp.left_secondary_point_publisher:main',
+            'twoPrimariesPublisher = fp.two_primaries_point_publisher:main',
+            'leftSecondaryPublisher = fp.left_secondary_point_publisher:main',
         ],
     },
 )
